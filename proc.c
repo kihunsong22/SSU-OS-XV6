@@ -336,35 +336,63 @@ int wait(void)
 void scheduler(void)
 {
   struct proc *p;
+  struct proc *p_select;
   struct cpu *c = mycpu();
   c->proc = 0;
+  int min_priority = 11; // reset every loop
 
   for (;;)
   {
+    min_priority = 11; // reset comparison values
+    p_select = 0;      // could forcefully run the previous process if not reset every loop
+
     // Enable interrupts on this processor.
     sti();
 
-    // Loop over process table looking for process to run.
+    // 1. Do a linear search with the lowest priority
+    // internal priority ranges 0~10, derived from (priority - age) with the minimum bound being zero
     acquire(&ptable.lock);
     for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
     {
       if (p->state != RUNNABLE)
         continue;
 
-      // Switch to chosen process.  It is the process's job
-      // to release ptable.lock and then reacquire it
-      // before jumping back to us.
-      c->proc = p;
-      switchuvm(p);
-      p->state = RUNNING;
+      int cur_proc_priority = p->priority - p->age;
+      cur_proc_priority = cur_proc_priority < 0 ? 0 : cur_proc_priority;
 
-      swtch(&(c->scheduler), p->context);
-      switchkvm();
-
-      // Process is done running for now.
-      // It should have changed its p->state before coming back.
-      c->proc = 0;
+      if (cur_proc_priority < min_priority)
+      {
+        p_select = p;
+        min_priority = cur_proc_priority;
+      }
     }
+
+    // 2. Execute the selected process
+    if (!p_select) //
+    {
+      release(&ptable.lock);
+      continue;
+    }
+
+    c->proc = p_select;
+    switchuvm(p_select);
+    p_select->state = RUNNING;
+
+    swtch(&(c->scheduler), p_select->context);
+    switchkvm();
+
+    // Process is done running for now.
+    // It should have changed its p->state before coming back.
+    c->proc = 0;
+
+    // 3. Increment age for all other RUNNABLE non-selects
+    for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+    {
+      if (p->state == RUNNABLE && p->age < 10)
+        p->age++;
+    }
+    p_select->age = 0; // reset the select's age back to zero
+
     release(&ptable.lock);
   }
 }
