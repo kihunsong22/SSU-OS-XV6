@@ -61,6 +61,7 @@ struct proc
   struct inode *cwd;          // Current directory
   char name[16];              // Process name (debugging)
   int priority;               // Process priority, defaults to 5
+  int age;                    // Scheduler aging record, starts with a zero value, incremented with each loop
 };
 
 // Process memory is laid out contiguously, low addresses first:
