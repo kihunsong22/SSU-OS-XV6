@@ -543,3 +543,22 @@ void procdump(void)
     cprintf("\n");
   }
 }
+
+// get_proc_priority function implementation
+int get_proc_priority(int pid_input)
+{
+  struct proc *p;
+  int priority_found = -1;
+
+  acquire(&ptable.lock);
+
+  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+  {
+    if (p->pid == pid_input)
+      priority_found = p->priority;
+  }
+
+  release(&ptable.lock);
+
+  return priority_found;
+}
