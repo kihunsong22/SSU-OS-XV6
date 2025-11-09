@@ -100,6 +100,7 @@ extern int sys_wait(void);
 extern int sys_write(void);
 extern int sys_uptime(void);
 extern int sys_getprocpriority(void);
+extern int sys_setprocpriority(void);
 
 static int (*syscalls[])(void) = {
     [SYS_fork] sys_fork,
@@ -124,6 +125,7 @@ static int (*syscalls[])(void) = {
     [SYS_mkdir] sys_mkdir,
     [SYS_close] sys_close,
     [SYS_getprocpriority] sys_getprocpriority,
+    [SYS_setprocpriority] sys_setprocpriority,
 };
 
 void syscall(void)

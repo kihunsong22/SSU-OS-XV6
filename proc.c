@@ -562,3 +562,24 @@ int get_proc_priority(int pid_input)
 
   return priority_found;
 }
+
+// set_proc_priority function implementation
+int set_proc_priority(int pid_input, int priority_input)
+{
+  struct proc *p;
+
+  if (priority_input < 1 || priority_input > 10)
+    return -1;
+
+  acquire(&ptable.lock);
+
+  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+  {
+    if (p->pid == pid_input)
+      p->priority = priority_input;
+  }
+
+  release(&ptable.lock);
+
+  return 0;
+}

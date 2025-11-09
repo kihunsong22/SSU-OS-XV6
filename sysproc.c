@@ -92,3 +92,14 @@ int sys_getprocpriority(void)
 
   return get_proc_priority(pid);
 }
+
+int sys_setprocpriority(void)
+{
+  int pid, priority;
+  if (argint(0, &pid) < 0) // returns -1 upon failure
+    return -1;
+  if (argint(1, &priority) < 0) // returns -1 upon failure
+    return -1;
+
+  return set_proc_priority(pid, priority);
+}
