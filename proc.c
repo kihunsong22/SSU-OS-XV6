@@ -115,7 +115,7 @@ found:
   memset(p->context, 0, sizeof *p->context);
   p->context->eip = (uint)forkret;
   p->priority = 5;
-  p->age = 0;
+  p->selected = 0;
 
   return p;
 }
@@ -344,21 +344,23 @@ void scheduler(void)
   for (;;)
   {
     min_priority = 11; // reset comparison values
-    p_select = 0;      // could forcefully run the previous process if not reset every loop
+    p = 0;
+    p_select = 0; // could forcefully run the previous process if not reset every loop
 
     // Enable interrupts on this processor.
     sti();
 
     // 1. Do a linear search with the lowest priority
-    // internal priority ranges 0~10, derived from (priority - age) with the minimum bound being zero
+    // internal priority ranges 1~10, derived from (priority + selected/50)
     acquire(&ptable.lock);
     for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
     {
       if (p->state != RUNNABLE)
         continue;
 
-      int cur_proc_priority = p->priority - (p->age) / 50;
-      cur_proc_priority = cur_proc_priority < 0 ? 0 : cur_proc_priority;
+      int cur_proc_priority = p->priority + (p->selected) / 50;
+      cur_proc_priority = cur_proc_priority < 1 ? 1 : cur_proc_priority;
+      cur_proc_priority = cur_proc_priority > 10 ? 10 : cur_proc_priority;
 
       if (cur_proc_priority < min_priority)
       {
@@ -366,32 +368,26 @@ void scheduler(void)
         min_priority = cur_proc_priority;
       }
     }
+    p = p_select;
 
     // 2. Execute the selected process
-    if (!p_select) // invalid process
+    if (!p) // invalid process
     {
       release(&ptable.lock);
       continue;
     }
+    p->selected += p->selected >= 500 ? 0 : 1;
 
-    c->proc = p_select;
-    switchuvm(p_select);
-    p_select->state = RUNNING;
+    c->proc = p;
+    switchuvm(p);
+    p->state = RUNNING;
 
-    swtch(&(c->scheduler), p_select->context);
+    swtch(&(c->scheduler), p->context);
     switchkvm();
 
     // Process is done running for now.
     // It should have changed its p->state before coming back.
     c->proc = 0;
-
-    // 3. Increment age for all other RUNNABLE non-selects
-    for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
-    {
-      if (p->state == RUNNABLE && p->age < 500)
-        p->age++;
-    }
-    p_select->age = 0; // reset the select's age back to zero
 
     release(&ptable.lock);
   }

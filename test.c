@@ -3,7 +3,7 @@
 #include "user.h"
 
 #define PROCESS_NUM 5
-#define PROCESS_DUMMY_LOOP 25000000
+#define PROCESS_DUMMY_LOOP 500000000
 
 int main(int argc, char *argv[])
 {
@@ -20,8 +20,9 @@ int main(int argc, char *argv[])
 
         if (pid == 0) // child
         {
-            set_proc_priority(getpid(), i + 1);
+            // set_proc_priority(getpid(), i + 1);
             volatile long long dummy = 0;
+
             for (int j = 0; j < PROCESS_DUMMY_LOOP; j++) // dummy load
             {
                 dummy += (j * j) % 997;
@@ -30,6 +31,10 @@ int main(int argc, char *argv[])
 
             printf(1, "Proc %d priority %d finished (res=%d)\n", getpid(), i + 1, (int)dummy);
             exit();
+        }
+        else // parent
+        {
+            set_proc_priority(pid, i + 1);
         }
     }
     {
