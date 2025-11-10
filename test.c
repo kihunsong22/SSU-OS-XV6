@@ -2,24 +2,41 @@
 #include "stat.h"
 #include "user.h"
 
+#define PROCESS_NUM 5
+#define PROCESS_DUMMY_LOOP 25000000
+
 int main(int argc, char *argv[])
 {
-    printf(1, "Hello World\n");
+    int pid = -2;
 
-    for (int i = 0; i < 5; i++)
+    for (int i = 0; i < PROCESS_NUM; i++)
     {
-        int pid = fork();
+        pid = fork();
+        if (pid < 0)
+        {
+            printf(1, "process fork failed!\n");
+            exit();
+        }
 
-        if (pid == 0)
+        if (pid == 0) // child
         {
             set_proc_priority(getpid(), i + 1);
-        }
-        for (int j = 0; j < 1000000; j++)
-            if (12.0 == 123 * 234.0)
-                ; // dummy load
+            volatile long long dummy = 0;
+            for (int j = 0; j < PROCESS_DUMMY_LOOP; j++) // dummy load
+            {
+                dummy += (j * j) % 997;
+                dummy ^= (j << 3);
+            }
 
-        printf(1, "Proc %d with priority %d finished", getpid(), i + 1);
-        exit();
+            printf(1, "Proc %d priority %d finished (res=%d)\n", getpid(), i + 1, (int)dummy);
+            exit();
+        }
+    }
+    {
+        for (int i = 0; i < PROCESS_NUM; i++)
+        {
+            wait();
+        }
     }
 
     exit();

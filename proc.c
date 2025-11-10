@@ -357,7 +357,7 @@ void scheduler(void)
       if (p->state != RUNNABLE)
         continue;
 
-      int cur_proc_priority = p->priority - p->age;
+      int cur_proc_priority = p->priority - (p->age) / 50;
       cur_proc_priority = cur_proc_priority < 0 ? 0 : cur_proc_priority;
 
       if (cur_proc_priority < min_priority)
@@ -368,7 +368,7 @@ void scheduler(void)
     }
 
     // 2. Execute the selected process
-    if (!p_select) //
+    if (!p_select) // invalid process
     {
       release(&ptable.lock);
       continue;
@@ -388,7 +388,7 @@ void scheduler(void)
     // 3. Increment age for all other RUNNABLE non-selects
     for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
     {
-      if (p->state == RUNNABLE && p->age < 10)
+      if (p->state == RUNNABLE && p->age < 500)
         p->age++;
     }
     p_select->age = 0; // reset the select's age back to zero
