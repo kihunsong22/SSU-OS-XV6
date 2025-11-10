@@ -84,7 +84,7 @@ int sys_uptime(void)
   return xticks;
 }
 
-int sys_getprocpriority(void)
+int sys_get_proc_priority(void)
 {
   int pid;
   if (argint(0, &pid) < 0) // returns -1 upon failure
@@ -93,7 +93,7 @@ int sys_getprocpriority(void)
   return get_proc_priority(pid);
 }
 
-int sys_setprocpriority(void)
+int sys_set_proc_priority(void)
 {
   int pid, priority;
   if (argint(0, &pid) < 0) // returns -1 upon failure
