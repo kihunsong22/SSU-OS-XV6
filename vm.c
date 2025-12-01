@@ -7,6 +7,8 @@
 #include "proc.h"
 #include "elf.h"
 
+void pagefault(void);
+
 extern char data[]; // defined by kernel.ld
 pde_t *kpgdir;      // for use in scheduler()
 
@@ -335,8 +337,8 @@ copyuvm(pde_t *pgdir, uint sz)
     pa = PTE_ADDR(*pte);
     flags = PTE_FLAGS(*pte);
 
-    *pte &= (~PTE_W); // make parent mapping read only
-    // flags &= ~PTE_W;  // child, also read only
+    *pte &= (~PTE_W); // clear parent write bit, read-only
+    flags &= ~PTE_W;  // clear child write bit, read-only
 
     // if((mem = kalloc()) == 0)
     //   goto bad;
@@ -396,6 +398,31 @@ int copyout(pde_t *pgdir, uint va, void *p, uint len)
     va = va0 + PGSIZE;
   }
   return 0;
+}
+
+void pagefault(void)
+{
+  uint pgflt_va = rcr2();
+
+  struct proc *curproc = myproc();
+  pte_t *pte = walkpgdir(curproc->pgdir, (void *)pgflt_va, 0);
+
+  uint pa = PTE_ADDR(*pte);
+  uint rc = get_refcount(pa);
+
+  if (rc > 1)
+  {
+    char *mem = kalloc();
+    memmove(mem, (char *)P2V(pa), PGSIZE);
+    *pte = V2P(mem) | PTE_P | PTE_U | PTE_W;
+    dec_refcount(pa);
+  }
+  else if (rc == 1)
+  {
+    *pte |= PTE_W;
+  }
+
+  lcr3(V2P(curproc->pgdir));
 }
 
 // PAGEBREAK!
