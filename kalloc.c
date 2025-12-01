@@ -57,7 +57,10 @@ void freerange(void *vstart, void *vend)
   char *p;
   p = (char *)PGROUNDUP((uint)vstart);
   for (; p + PGSIZE <= (char *)vend; p += PGSIZE)
+  {
+    pgrefcount[V2P(p) >> PTXSHIFT] = 0;
     kfree(p);
+  }
 }
 // PAGEBREAK: 21
 //  Free the page of physical memory pointed at by v,
@@ -107,7 +110,7 @@ kalloc(void)
   if (r)
   {
     kmem.freelist = r->next;
-    pgrefcount[V2P((char *)r) >> PTXSHIFT] = 1;
+    pgrefcount[V2P((char *)r) >> PTXSHIFT] = 1; // reference count 수정
     num_free_pages--;
   }
 
@@ -126,7 +129,6 @@ int sys_getNumFreePages(void)
   return getNumFreePages();
 }
 
-// pa : physical address
 uint get_refcount(uint pa)
 {
   return pgrefcount[pa >> PTXSHIFT];

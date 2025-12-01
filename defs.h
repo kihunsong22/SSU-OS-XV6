@@ -69,6 +69,9 @@ void kfree(char *);
 void kinit1(void *, void *);
 void kinit2(void *, void *);
 int getNumFreePages(void);
+uint get_refcount(uint pa);
+void inc_refcount(uint pa);
+void dec_refcount(uint pa);
 
 // kbd.c
 void kbdintr(void);
